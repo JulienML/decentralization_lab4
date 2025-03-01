@@ -17,23 +17,23 @@ export async function simpleOnionRouter(nodeId: number) {
   let privateKey = await exportPrvKey(rsaKeyPair.privateKey);
 
   onionRouter.get("/status", (req, res) => {
-    res.send("live");
+    res.status(200).send("live");
   });
 
   onionRouter.get("/getLastReceivedEncryptedMessage", (req, res) => {
-    res.send({ "result": lastReceivedEncryptedMessage });
+    res.status(200).send({ "result": lastReceivedEncryptedMessage });
   });
 
   onionRouter.get("/getLastReceivedDecryptedMessage", (req, res) => {
-    res.send({ "result": lastReceivedDecryptedMessage });
+    res.status(200).send({ "result": lastReceivedDecryptedMessage });
   });
 
   onionRouter.get("/getLastMessageDestination", (req, res) => {
-    res.send({ "result": lastMessageDestination });
+    res.status(200).send({ "result": lastMessageDestination });
   });
 
   onionRouter.get("/getPrivateKey", (req, res) => {
-    res.send({ "result": privateKey });
+    res.status(200).send({ "result": privateKey });
   });
 
   onionRouter.post("/message", async (req, res) => {
@@ -52,31 +52,38 @@ export async function simpleOnionRouter(nodeId: number) {
     lastMessageDestination = nextNode;
 
     // Transfer the message to the next node or user
-    await fetch(`http://localhost:${nextNode}/message`, {
+    try {
+      await fetch(`http://localhost:${nextNode}/message`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: nextMessage,
+        }),
+      });
+      res.status(200).send("Message received and forwarded.");
+    } catch {
+      res.status(500).send("Error while forwarding the message.");
+    }
+  });
+
+  // Register the node in the registry
+  try {
+    await fetch(`http://localhost:${REGISTRY_PORT}/registerNode`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: nextMessage,
+        nodeId: nodeId,
+        pubKey: publicKey,
       }),
     });
-
-    res.send("Message received and forwarded.");
-  });
-
-  // Register the node in the registry
-  await fetch(`http://localhost:${REGISTRY_PORT}/registerNode`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      nodeId: nodeId,
-      pubKey: publicKey,
-    }),
-  });
-  console.log(`Node ${nodeId} registered successfully.`);
+    console.log(`Node ${nodeId} registered successfully.`);
+  } catch {
+    console.error(`Error while registering node ${nodeId}.`);
+  }
 
   const server = onionRouter.listen(BASE_ONION_ROUTER_PORT + nodeId, () => {
     console.log(

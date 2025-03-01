@@ -21,7 +21,7 @@ export async function launchRegistry() {
   _registry.use(bodyParser.json());
 
   _registry.get("/status", (req, res) => {
-    res.send("live");
+    res.status(200).send("live");
   });
 
   _registry.post("/registerNode", (req: Request, res: Response) => {
@@ -32,7 +32,7 @@ export async function launchRegistry() {
   });
 
   _registry.get("/getNodeRegistry", (req: Request, res: Response) => {
-    res.json(allNodes);
+    res.status(200).json(allNodes);
   });
 
   const server = _registry.listen(REGISTRY_PORT, () => {

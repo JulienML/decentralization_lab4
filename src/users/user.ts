@@ -19,19 +19,19 @@ export async function user(userId: number) {
   let lastSentMessage: string | null = null;
 
   _user.get("/status", (req, res) => {
-    res.send("live");
+    res.status(200).send("live");
   });
 
   _user.get("/getLastReceivedMessage", (req, res) => {
-    res.send({ "result": lastReceivedMessage });
+    res.status(200).send({ "result": lastReceivedMessage });
   });
 
   _user.get("/getLastSentMessage", (req, res) => {
-    res.send({ "result": lastSentMessage });
+    res.status(200).send({ "result": lastSentMessage });
   });
 
   _user.get("/getLastCircuit", (req, res) => {
-    res.send({ "result": lastCircuit.map(node => node.nodeId) });
+    res.status(200).send({ "result": lastCircuit.map(node => node.nodeId) });
   });
 
   _user.post("/sendMessage", async (req, res) => {
@@ -93,7 +93,7 @@ export async function user(userId: number) {
 
         lastCircuit = circuit;
         lastSentMessage = message;
-        res.status(200).send("Message sent successfully");
+        res.status(200).send("success");
     } catch (error) {
         console.error("Error sending message:", error);
         res.status(500).send("Failed to send message");
@@ -102,8 +102,13 @@ export async function user(userId: number) {
 
   _user.post("/message", async (req, res) => {
     const { message } = req.body;
-    lastReceivedMessage = message;
-    res.send("success");
+    if (message) {
+      lastReceivedMessage = message;
+      res.status(200).send("success");
+    }
+    else {
+      res.status(400).send("No message received");
+    }
   });
 
   const server = _user.listen(BASE_USER_PORT + userId, () => {
